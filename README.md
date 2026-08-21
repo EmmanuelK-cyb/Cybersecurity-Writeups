@@ -90,6 +90,39 @@ Demonstrate how to use UNION SELECT with string values to identify which columns
 ' UNION SELECT 'abc','def'--
 
 
+### 📄 Lab 07: SQL Injection attack, querying the database type and version on oracle
+```
+### 🧪 Lab 07: SQL injection attack, querying the database type and version on Oracle
+
+- **Category:** SQL Injection (Examining the Database)
+- **Difficulty:** Practitioner 🟢
+- **Status:** Completed ✅
+
+#### 🎯 Objective
+Identify the database type and version of an Oracle-backed web application by injecting a `UNION` attack vector.
+
+#### 💡 Key Concept Learned
+Oracle databases have strict syntax rules that differentiate them from MySQL or PostgreSQL:
+1. **The `FROM` Requirement:** Every `SELECT` query must include a `FROM` clause. To select constants or test columns, Oracle provides a built-in dummy table named `DUAL`.
+2. **Version Tracking:** System banners and software version information are kept inside the `v$version` table under the `banner` column.
+
+#### 🛠️ Exploit Methodology
+1. **Determine Column Count & Types:** 
+   Discovered that the database returns 2 columns, both of which accept string data:
+   ```sql
+   ' UNION SELECT 'a', 'a' FROM dual--
+   ```
+
+2. **Extract Database Version:** 
+   Queried the Oracle system table to reflect the version banner string onto the page:
+   ```sql
+   ' UNION SELECT banner, NULL FROM v\$version--
+   ```
+
+---
+
+
+
 
 
 
