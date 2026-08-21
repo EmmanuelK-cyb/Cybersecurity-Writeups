@@ -90,6 +90,71 @@ Demonstrate how to use UNION SELECT with string values to identify which columns
 ' UNION SELECT 'abc','def'--
 
 
+
+### 🧪 Lab 05: SQL injection UNION attack, retrieving data from other tables
+
+- **Category:** SQL Injection (UNION Attacks)
+- **Difficulty:** Practitioner 🟢
+- **Status:** Completed ✅
+
+#### 🎯 Objective
+Retrieve sensitive data (usernames and passwords) from a separate database table (`users`) and log in as the administrator user.
+
+#### 💡 Key Concept Learned
+* **Cross-Table Querying:** Using a `UNION` attack to access arbitrary tables within the database schema, provided you map out the matching column numbers and data types of the original query.
+
+#### 🛠️ Exploit Methodology
+1. **Determine Column Count:**
+   Used `ORDER BY` clauses to find the column limit. Discovered the query returns 2 columns.
+2. **Verify Text Support:**
+   Tested if both columns accept string data:
+   ```sql
+   ' UNION SELECT 'a', 'b'--
+   ```
+3. **Extract Credentials:**
+   Targeted the `users` table to pull the `username` and `password` columns directly into the visible product grid:
+   ```sql
+   ' UNION SELECT username, password FROM users--
+   ```
+4. **Takeover:** Located the `administrator` account credentials in the server response and successfully authenticated.
+
+---
+
+
+
+
+
+
+### 🧪 Lab 06: SQL injection UNION attack, retrieving multiple values in a single column
+
+- **Category:** SQL Injection (UNION Attacks)
+- **Difficulty:** Practitioner 🟢
+- **Status:** Completed ✅
+
+#### 🎯 Objective
+Bypass data type restrictions where only a single column supports text data, yet multiple fields of information (username and password) must be retrieved.
+
+#### 💡 Key Concept Learned
+* **String Concatenation:** When a query limits the number of visible text fields, you can combine multiple data fields into a single string using a custom delimiter character (like `~`) to bypass the column restriction.
+
+#### 🛠️ Exploit Methodology
+1. **Identify Single-Column Text Restriction:**
+   Discovered that while the query returned 2 columns, only one of them would allow string injection without triggering a database error (`200 OK` on only one side).
+2. **Concatenate and Dump:**
+   Used the database's string concatenation operator (`||`) to merge the distinct credentials into the single text-compatible column slot:
+   ```sql
+   ' UNION SELECT NULL, username || '~' || password FROM users--
+   ```
+3. **Takeover:** Parsed out the administrator's password from the joined `username~password` format string in the HTML output and logged in.
+
+---
+
+
+
+
+
+
+
 ### 📄 Lab 07: SQL Injection attack, querying the database type and version on oracle
 ```
 ### 🧪 Lab 07: SQL injection attack, querying the database type and version on Oracle
