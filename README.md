@@ -90,7 +90,8 @@ Demonstrate how to use UNION SELECT with string values to identify which columns
 ' UNION SELECT 'abc','def'--
 
 
-
+### 📄 Lab 5: SQL Injection – UNION attack, retrieving data from other tables
+```
 ### 🧪 Lab 05: SQL injection UNION attack, retrieving data from other tables
 
 - **Category:** SQL Injection (UNION Attacks)
@@ -185,6 +186,46 @@ Oracle databases have strict syntax rules that differentiate them from MySQL or 
    ```
 
 ---
+
+
+
+
+
+
+
+### 🧪 Lab 08: SQL injection attack, querying the database type and version on MySQL and Microsoft
+
+- **Category:** SQL Injection (Examining the Database)
+- **Difficulty:** Practitioner 🟢
+- **Status:** Completed ✅
+
+#### 🎯 Objective
+Identify the database type and version of a backend system running either MySQL or Microsoft SQL Server (MSSQL) using a `UNION` attack vector.
+
+#### 💡 Key Concept Learned
+* **Non-Strict FROM Clauses:** Neither MySQL nor MSSQL requires a dummy table (like Oracle's `DUAL`) to execute standalone `SELECT` constants.
+* **MySQL Comment Handling:** MySQL requires an explicit space after a double-dash (`-- `) or a hash symbol (`#`). Using `#` (URL encoded as `%23`) avoids character stripping issues inside HTTP parameters.
+* **Version Identification:** Both SQL engines leverage the `@@version` global variable to retrieve product and environment release banners.
+
+#### 🛠️ Exploit Methodology
+1. **Determine Column Count:**
+   Injected a trailing hash comment structure to check system processing boundaries, finding exactly 2 columns:
+   ```sql
+   ' ORDER BY 2#
+   ```
+2. **Verify Text Support:**
+   Tested structural compatibility by passing placeholder string data to both returned index channels:
+   ```sql
+   ' UNION SELECT 'abc', 'xyz'#
+   ```
+3. **Query Database Version:**
+   Called the built-in system variable across a text-compatible column to parse out the deployment framework properties directly onto the webpage content layout:
+   ```sql
+   ' UNION SELECT @@version, NULL#
+   ```
+
+---
+
 
 
 
