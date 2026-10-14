@@ -271,6 +271,49 @@ for position in range(1, 21):
 
 
 
+# 🛡️ PortSwigger Web Security Academy: Visible Error-Based SQL Injection
+
+## 📝 Lab Description
+This lab contains a visible SQL injection vulnerability within the tracking cookie (`TrackingId`) infrastructure. The backend application uses a **PostgreSQL** database engine. Unlike blind injection vulnerabilities that require iterative guessing, this application natively returns verbose database error messages directly within the HTML body layout. By intentionally forcing a data type conversion failure, sensitive data can be directly extracted via backend error logs.
+
+* **Objective:** Leak and extract the alphanumeric password for the `administrator` user account and log in.
+* **Database Engine:** PostgreSQL
+
+---
+
+## 🚀 Exploitation Methodology
+
+### 1. Identifying the Error Leak Context
+By supplying invalid subqueries within the parameter, I observed that the application catches database exceptions but prints out structured, verbose PostgreSQL engine details on the front-end layout:
+* **Payload Structure:** `TrackingId=' AND 1=CAST((SELECT 1) AS int)--`
+
+### 2. Overcoming Character Limit Truncation
+During manual exploitation via **Burp Suite Repeater**, long payload strings combined with original alphanumeric tracking values were getting cut off (truncated) by front-end input size constraints. This chopped off the vital SQL comments (`--`), breaking the query logic before it hit the database.
+
+* **The Fix:** I completely wiped out the original tracking ID alphanumeric token string to optimize character spacing, freeing up real estate for the comment delimiters.
+
+### 3. Forcing Data Type Mismatch (The Exploit)
+By wrapping the text-based password query inside a structural `CAST(... AS int)` operation, PostgreSQL evaluates the logical condition but fails fatally when trying to turn an alphanumeric password string into an integer. 
+
+```http
+Cookie: TrackingId=' AND 1=CAST((SELECT password FROM users LIMIT 1) AS int)--
+```
+
+### 4. Reading the Data Exfiltration Payload
+Upon sending the minimized request, the application crashed safely and reflected the data directly into the error payload output pane:
+
+> `An error occurred: invalid input syntax for type integer: "p4ssw0rd_h3r3_abc123"`
+
+---
+
+## 🏆 Key Takeaways & Skills Learned
+* **Verbose Error Exploitation:** Mastered abusing descriptive data type casting mechanisms (`CAST()`) to read inline row parameters out of structural database exceptions.
+* **Evasion & Input Constraints:** Diagnosed and bypassed structural request length filtering (character truncation limits) by modifying and condensing parameter payloads.
+* **Database Target Analysis:** Analyzed response layouts to quickly pivot inputs based on specific target constraints (PostgreSQL structures vs. Oracle structures).
+
+
+
+
 
 
 
