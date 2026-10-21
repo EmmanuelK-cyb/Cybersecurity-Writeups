@@ -313,6 +313,48 @@ Upon sending the minimized request, the application crashed safely and reflected
 
 
 
+# 🛡️ PortSwigger Web Security Academy: Blind SQL Injection with Time Delays
+
+## 📝 Lab Description
+This lab contains a blind SQL injection vulnerability within the tracking cookie (`TrackingId`) infrastructure. The backend database uses a **PostgreSQL** engine. Unlike previous labs, the application does not return any visible database errors or changes in the page text when a query succeeds or fails. To verify and exploit the vulnerability, conditional time-based logic must be injected to force the database to pause execution before responding to the network client.
+
+* **Objective:** Exploit the blind SQL injection vulnerability to trigger an intentional 10-second delay.
+* **Database Engine:** PostgreSQL
+
+---
+
+## 🚀 Exploitation Methodology
+
+### 1. Identifying Time-Based Blind Logic
+Because the application processes input silently, I injected a database sleep statement (`pg_sleep()`) native to PostgreSQL into the cookie header parameter to check for execution control. 
+
+* **The Test Payload:**
+  ```http
+  Cookie: TrackingId=x'; SELECT pg_sleep(10)--
+  ```
+By monitoring the network response metrics inside **Burp Suite Repeater**, I verified the vulnerability when the application backend hung for exactly **10,000 milliseconds (10 seconds)** before closing the connection.
+
+### 2. Live Session Injection (The Solution)
+While a custom Python automation script can be written to extract granular table text character-by-character using time differentials, the specific clearance criteria for this environment required triggering the 10-second infrastructure delay natively on an active, authenticated browser thread.
+
+Using **Burp Suite Intercept**, I caught a live browser request and appended the PostgreSQL concatenation sleep sequence cleanly inside the active tracking parameter string:
+
+```http
+Cookie: TrackingId=LIVE_TOKEN_STRING' || pg_sleep(10)--; session=LIVE_SESSION_STRING
+```
+
+Forwarding this request caused the front-end browser tab to spin for 10 seconds while the database executed the sleep command, completing the validation challenge.
+
+---
+
+## 🏆 Key Takeaways & Skills Learned
+* **Time-Based Inference Controls:** Mastered testing for hidden injection flaws where data reflections and error outputs are completely suppressed by checking response latency.
+* **Database Engine Profiling:** Utilized PostgreSQL specific timing operators (`pg_sleep`) to achieve execution confirmation.
+* **Session Synced Verification:** Learned the importance of aligning exploit actions with active browser session tracking headers rather than isolated sandbox tokens.
+
+
+
+
 
 
 
