@@ -434,6 +434,47 @@ Because the backend session state was already elevated upon primary login withou
 
 
 
+# 🛡️ PortSwigger Web Security Academy: Password Reset Broken Logic
+
+## 📝 Lab Description
+This lab's password reset functionality contains a broken logic flaw. While the application generates a valid reset token and sends it to the requesting user's email, the backend fails to verify whether the reset token actually belongs to the user whose password is being changed during the final submission step.
+
+* **Objective:** Reset `carlos`'s password and log in to his account.
+* **Known Credentials:** `wiener:peter`
+
+---
+
+## 🚀 Exploitation Methodology
+
+### 1. Requesting a Valid Password Reset Token
+I navigated to the **Forgot password?** page and submitted a password reset request for my own account (`wiener`). Opening the **Email client** revealed a password reset link containing a valid, single-use `temp-forgot-password-token` parameter.
+
+### 2. Intercepting and Tampering with the Reset Request
+After clicking the reset link and entering a new password, I intercepted the resulting `POST /forgot-password` request in **Burp Suite Proxy**:
+
+```http
+POST /forgot-password?temp-forgot-password-token=VALID_TOKEN HTTP/2
+Host: <LAB-ID>.web-security-academy.net
+Content-Type: application/x-www-form-urlencoded
+
+temp-forgot-password-token=VALID_TOKEN&username=wiener&new-password-1=password&new-password-2=password
+```
+
+Because the server trusts the `username` parameter in the request body without binding it to the `temp-forgot-password-token`, I modified `username=wiener` to `username=carlos` and forwarded the request.
+
+### 3. Account Takeover
+The backend validated my token and applied the new password (`password`) directly to `carlos`'s account. I navigated to `/login` and authenticated as `carlos:password` to solve the lab.
+
+---
+
+## 🏆 Key Takeaways
+* **Token-to-User Binding:** Password reset tokens must be cryptographically or relationally tied to a specific user ID on the server side—the backend should never rely on a user-supplied `username` field during the final reset step.
+* **Parameter Tampering:** Always inspect hidden or pre-filled form fields in multi-step workflows (like password resets) to verify whether user identifiers can be swapped.
+
+
+
+
+
 
 
 
