@@ -356,6 +356,85 @@ Forwarding this request caused the front-end browser tab to spin for 10 seconds 
 
 
 
+# 🛡️ PortSwigger Web Security Academy: Username Enumeration via Different Responses
+
+## 📝 Lab Description
+This lab contains an authentication vulnerability in its login mechanism. Because the application returns distinct error messages depending on whether a username exists (`Invalid username` vs. `Incorrect password`), an attacker can enumerate valid user accounts before launching a targeted credential brute-force attack.
+
+* **Objective:** Enumerate a valid username, brute-force the corresponding password, and log into the account.
+* **Tools Used:** THC-Hydra, Kali Linux, Burp Suite
+
+---
+
+## 🚀 Exploitation Methodology
+
+### 1. Analyzing Login Error Responses
+By testing invalid credentials on the `/login` endpoint, I identified two distinct front-end error states:
+* **Unknown Username:** Returns `Invalid username`
+* **Valid Username / Wrong Password:** Returns `Incorrect password`
+
+### 2. Username Enumeration with THC-Hydra
+Instead of relying on rate-limited community proxy tools, I loaded PortSwigger's candidate username wordlist (`usernames.txt`) into **THC-Hydra** over HTTPS (`https-post-form`). By filtering out responses containing `Invalid username`, Hydra isolated the single valid user account:
+
+```bash
+hydra -L usernames.txt -p password123 -t 16 <LAB-ID>.web-security-academy.net https-post-form "/login:username=^USER^&password=^PASS^:F=Invalid username"
+```
+
+* **Enumerated Username:** `application`
+
+### 3. Password Brute-Forcing
+With a confirmed target username (`application`), I reversed the Hydra attack using the candidate password wordlist (`passwords.txt`) and adjusted the failure filter to ignore `Incorrect password` responses:
+
+```bash
+hydra -l application -P passwords.txt -t 16 <LAB-ID>.web-security-academy.net https-post-form "/login:username=^USER^&password=^PASS^:F=Incorrect password"
+```
+
+### 4. Account Access
+Using the cracked credentials (`application` and the extracted password), I authenticated via the `/login` portal and completed the lab.
+
+---
+
+## 🏆 Key Takeaways & Remediation
+* **Vulnerability Root Cause:** Verbose authentication feedback leaks account existence, cutting attacker brute-force effort in half.
+* **Secure Fix:** Always return generic, identical error messages (e.g., *"Invalid username or password"*) and uniform HTTP responses for all failed login attempts, paired with rate-limiting or account lockout controls.
+
+
+
+
+
+# 🛡️ PortSwigger Web Security Academy: 2FA Simple Bypass
+
+## 📝 Lab Description
+This lab's two-factor authentication (2FA) mechanism is vulnerable to forced browsing. While the application prompts for a verification code after valid primary credentials are submitted, it fails to verify whether the 2FA step was actually completed before granting access to authenticated pages.
+
+* **Objective:** Bypass the 2FA verification step and access the victim's account page (`carlos`).
+* **Credentials Used:** `carlos:montoya`
+
+---
+
+## 🚀 Exploitation Methodology
+
+### 1. Primary Authentication
+I navigated to the login portal and submitted the victim's known username and password (`carlos:montoya`). Upon submission, the application issued an authenticated session cookie and redirected the browser to `/login2` to request a 6-digit verification code.
+
+### 2. Forced Browsing Bypass
+Instead of interacting with the 2FA form, I manually modified the URL path in the browser address bar from `/login2` directly to `/my-account`:
+
+```http
+GET /my-account HTTP/2
+```
+
+Because the backend session state was already elevated upon primary login without enforcing a secondary verification flag, the server rendered `carlos`'s account dashboard directly.
+
+---
+
+## 🏆 Key Takeaways
+* **State Enforcement:** Multi-factor authentication must enforce a strict state machine on the server side—users should remain in a temporary, unprivileged pre-auth state until all required authentication factors are verified.
+
+
+
+
+
 
 
 
